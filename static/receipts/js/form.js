@@ -41,6 +41,21 @@
         const qrFilled = qrInput && qrInput.value.trim().length > 0;
         const errors = {};
         const values = {};
+        const photoInput = form.elements["photo"];
+        if (photoInput && photoInput.files && photoInput.files.length > 0) {
+            const f = photoInput.files[0];
+            const maxBytes = 5 * 1024 * 1024;
+            const minBytes = 10 * 1024;
+            const allowed = ["image/jpeg", "image/png", "image/webp"];
+
+            if (f.size > maxBytes) {
+                errors.photo = `Файл больше ${maxBytes / (1024 * 1024)} МБ`;
+            } else if (f.size < minBytes) {
+                errors.photo = "Файл слишком маленький или повреждён";
+            } else if (f.type && !allowed.includes(f.type)) {
+                errors.photo = "Только JPEG, PNG или WEBP";
+            }
+        }
 
         for (const name of Object.keys(fieldConfig)) {
             const input = form.elements[name];

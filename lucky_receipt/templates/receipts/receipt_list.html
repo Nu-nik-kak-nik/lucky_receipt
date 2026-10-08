@@ -19,8 +19,10 @@
                 <thead>
                     <tr>
                         <th>Дата покупки</th>
+                        <th>Дата регистрации</th>
                         <th>Сумма</th>
                         <th>Статус</th>
+                        <th>Фото</th>
                         <th>Причина отказа</th>
                     </tr>
                 </thead>
@@ -28,9 +30,21 @@
                     {% for r in receipts %}
                         <tr>
                             <td data-label="Дата покупки">{{ r.purchased_at|date:"d.m.Y H:i" }}</td>
+                            <td data-label="Дата регистрации">{{ r.created_at|date:"d.m.Y H:i" }}</td>
                             <td data-label="Сумма">{{ r.amount }} ₽</td>
                             <td data-label="Статус">
                                 <span class="badge badge--{{ r.status }}">{{ r.get_status_display }}</span>
+                            </td>
+                            <td data-label="Фото">
+                                {% if r.photos.all %}
+                                    {% with p=r.photos.all.0 %}
+                                        <a href="{{ p.image.url }}" target="_blank" rel="noopener">
+                                            <img src="{{ p.image.url }}" alt="Фото чека" class="receipt-thumb">
+                                        </a>
+                                    {% endwith %}
+                                {% else %}
+                                    <span class="muted">—</span>
+                                {% endif %}
                             </td>
                             <td data-label="Причина отказа">{{ r.rejection_reason|default:"—" }}</td>
                         </tr>

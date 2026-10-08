@@ -17,6 +17,7 @@
           class="form"
           method="post"
           action="{% url 'receipts:create' %}"
+          enctype="multipart/form-data"
           novalidate>
         {% csrf_token %}
 
@@ -65,6 +66,15 @@
         </div>
 
         <div class="form__error form__error--general" data-error-for="__all__"></div>
+
+        <div class="form__row">
+            <label class="form__label" for="{{ form.photo.id_for_label }}">
+                {{ form.photo.label }}
+            </label>
+            {{ form.photo }}
+            <small class="form__hint">{{ form.photo.help_text }}</small>
+            <div class="form__error" data-error-for="photo"></div>
+        </div>
 
         <div class="form__actions">
             <button type="submit" class="btn btn--primary" id="receipt-submit">

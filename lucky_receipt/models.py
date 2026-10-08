@@ -1,6 +1,11 @@
+import uuid
+from pathlib import Path
+
 from django.conf import settings
 from django.core.validators import MinValueValidator
 from django.db import models
+
+from .validators import validate_receipt_photo
 
 
 class Receipt(models.Model):
@@ -42,6 +47,7 @@ class Receipt(models.Model):
             models.UniqueConstraint(
                 fields=["fn", "fd", "fp"],
                 name="uniq_receipt_fn_fd_fp",
+                violation_error_message="Чек с такими ФН, ФД и ФП уже зарегистрирован",
             ),
         ]
         indexes = [
@@ -54,3 +60,31 @@ class Receipt(models.Model):
     @property
     def is_pending(self) -> bool:
         return self.status == self.Status.PENDING
+
+
+def receipt_photo_path(instance: "ReceiptPhoto", filename: str) -> str:
+    ext = Path(filename).suffix.lower()
+    return f"receipts/{instance.receipt_id}/{uuid.uuid4().hex}{ext}"
+
+
+class ReceiptPhoto(models.Model):
+    receipt = models.ForeignKey(
+        Receipt,
+        on_delete=models.CASCADE,
+        related_name="photos",
+        verbose_name="Чек",
+    )
+    image = models.ImageField(
+        "Фото чека",
+        upload_to=receipt_photo_path,
+        validators=[validate_receipt_photo],
+    )
+    uploaded_at = models.DateTimeField("Дата загрузки", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Фото чека"
+        verbose_name_plural = "Фото чеков"
+        ordering = ["-uploaded_at"]
+
+    def __str__(self) -> str:
+        return f"Фото к чеку #{self.receipt_id}"

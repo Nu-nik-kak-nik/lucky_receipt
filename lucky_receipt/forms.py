@@ -8,6 +8,7 @@ from django.utils import timezone
 
 from .models import Receipt
 from .services import QRParseError, parse_qr_string
+from .validators import validate_receipt_photo
 
 
 class ReceiptForm(forms.ModelForm):
@@ -20,10 +21,19 @@ class ReceiptForm(forms.ModelForm):
         }),
         help_text="Необязательно. Если заполнено — поля ниже подставятся автоматически.",
     )
+    photo = forms.ImageField(
+            required=False,
+            label="Фото чека",
+            validators=[validate_receipt_photo],
+            widget=forms.ClearableFileInput(attrs={
+                "accept": "image/jpeg,image/png,image/webp",
+            }),
+            help_text="JPEG, PNG или WEBP, до 5 МБ. Необязательно.",
+        )
 
     class Meta:
         model = Receipt
-        fields = ("qr_string", "fn", "fd", "fp", "purchased_at", "amount")
+        fields = ("qr_string", "fn", "fd", "fp", "purchased_at", "amount", "photo")
         labels = {
             "fn": "ФН",
             "fd": "ФД",
@@ -161,17 +171,17 @@ class ReceiptForm(forms.ModelForm):
             raise ValidationError(str(exc))
         return raw
 
-    def clean(self):
-        cleaned = super().clean()
-        fn = cleaned.get("fn")
-        fd = cleaned.get("fd")
-        fp = cleaned.get("fp")
-
-        if fn and fd and fp:
-            qs = Receipt.objects.filter(fn=fn, fd=fd, fp=fp)
-            if self.instance.pk:
-                qs = qs.exclude(pk=self.instance.pk)
-            if qs.exists():
-                raise ValidationError("Чек с такими ФН, ФД и ФП уже зарегистрирован")
-
-        return cleaned
+#     def clean(self):
+#         cleaned = super().clean()
+#         fn = cleaned.get("fn")
+#         fd = cleaned.get("fd")
+#         fp = cleaned.get("fp")
+#
+#         if fn and fd and fp:
+#             qs = Receipt.objects.filter(fn=fn, fd=fd, fp=fp)
+#             if self.instance.pk:
+#                 qs = qs.exclude(pk=self.instance.pk)
+#             if qs.exists():
+#                 raise ValidationError("Чек с такими ФН, ФД и ФП уже зарегистрирован")
+#
+#         return cleaned

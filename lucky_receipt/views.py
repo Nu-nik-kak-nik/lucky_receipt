@@ -9,7 +9,7 @@ from django.views import View
 from django.views.generic import CreateView, ListView
 
 from .forms import ReceiptForm
-from .models import Receipt
+from .models import Receipt, ReceiptPhoto
 
 
 def _form_errors_to_json(form) -> dict[str, list[str]]:
@@ -51,6 +51,7 @@ class ReceiptListView(LoginRequiredMixin, ListView):
         return (
             Receipt.objects
             .filter(user=self.request.user)
+            .prefetch_related("photos")
             .order_by("-purchased_at", "-id")
         )
 
@@ -62,7 +63,7 @@ class ReceiptCreateView(LoginRequiredMixin, View):
         return render(request, self.template_name, {"form": ReceiptForm()})
 
     def post(self, request):
-        form = ReceiptForm(request.POST)
+        form = ReceiptForm(request.POST, request.FILES)
         wants_json = _wants_json(request)
 
         if form.is_valid():
@@ -81,6 +82,10 @@ class ReceiptCreateView(LoginRequiredMixin, View):
                     )
                 form.add_error(None, message)
             else:
+                photo = form.cleaned_data.get("photo")
+                if photo:
+                    ReceiptPhoto.objects.create(receipt=receipt, image=photo)
+
                 if wants_json:
                     return JsonResponse({
                         "ok": True,
@@ -92,17 +97,11 @@ class ReceiptCreateView(LoginRequiredMixin, View):
                         },
                         "redirect_url": reverse("receipts:list"),
                     })
-                messages.success(
-                    request,
-                    "Чек зарегистрирован и отправлен на проверку",
-                )
+                messages.success(request, "Чек зарегистрирован и отправлен на проверку")
                 return redirect("receipts:list")
 
         if wants_json:
-            return JsonResponse(
-                {"ok": False, "errors": _form_errors_to_json(form)},
-                status=400,
-            )
+            return JsonResponse({"ok": False, "errors": _form_errors_to_json(form)}, status=400)
 
         return render(request, self.template_name, {"form": form})
 
