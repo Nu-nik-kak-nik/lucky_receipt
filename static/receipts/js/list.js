@@ -1,6 +1,8 @@
 (function () {
     "use strict";
 
+    const DEBUG = false;
+
     const rows = Array.from(document.querySelectorAll("tr[data-receipt-id]"));
     if (rows.length === 0) return;
 
