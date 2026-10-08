@@ -21,6 +21,15 @@
         {% csrf_token %}
 
         <div class="form__row">
+            <label class="form__label" for="{{ form.qr_string.id_for_label }}">
+                {{ form.qr_string.label }}
+            </label>
+            {{ form.qr_string }}
+            <small class="form__hint">{{ form.qr_string.help_text }}</small>
+            <div class="form__error" data-error-for="qr_string"></div>
+        </div>
+
+        <div class="form__row">
             <label class="form__label" for="{{ form.fn.id_for_label }}">ФН</label>
             {{ form.fn }}
             <small class="form__hint">Номер фискального накопителя</small>
