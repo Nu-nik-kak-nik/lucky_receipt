@@ -1,0 +1,32 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+    <h1>Отклонить чеки с указанием причины</h1>
+
+    <p>
+        Будет отклонено чеков: <strong>{{ receipts|length }}</strong>.
+        Указанная причина будет присвоена каждому.
+    </p>
+
+    <ul>
+        {% for r in receipts %}
+            <li>
+                #{{ r.id }} — {{ r.user.username }} —
+                {{ r.purchased_at|date:"d.m.Y H:i" }} — {{ r.amount }} ₽
+            </li>
+        {% endfor %}
+    </ul>
+
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="ids" value="{{ ids }}">
+        <fieldset class="module aligned">
+            {{ form.as_div }}
+        </fieldset>
+        <div class="submit-row">
+            <input type="submit" value="Отклонить" class="default">
+            <a href="{% url 'admin:lucky_receipt_receipt_changelist' %}"
+               class="button cancel-link">Отмена</a>
+        </div>
+    </form>
+{% endblock %}
