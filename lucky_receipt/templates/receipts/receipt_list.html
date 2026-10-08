@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Мои чеки — Чек на удачу{% endblock %}
 
 {% block content %}
@@ -28,7 +29,8 @@
                 </thead>
                 <tbody>
                     {% for r in receipts %}
-                        <tr>
+                        <tr data-receipt-id="{{ r.id }}"
+                            data-status="{{ r.status }}">
                             <td data-label="Дата покупки">{{ r.purchased_at|date:"d.m.Y H:i" }}</td>
                             <td data-label="Дата регистрации">{{ r.created_at|date:"d.m.Y H:i" }}</td>
                             <td data-label="Сумма">{{ r.amount }} ₽</td>
@@ -76,4 +78,7 @@
         <p class="empty">Пока нет ни одного чека. <a href="{% url 'receipts:create' %}">Зарегистрируйте первый</a>.</p>
     {% endif %}
 </section>
+{% endblock %}
+{% block scripts %}
+<script src="{% static 'receipts/js/list.js' %}" defer></script>
 {% endblock %}

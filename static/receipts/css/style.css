@@ -292,3 +292,22 @@ a:hover { text-decoration: underline; }
     display: block;
 }
 .muted { color: var(--color-muted); }
+
+tr.row--updated {
+    animation: row-flash 2.5s ease-out;
+}
+
+@keyframes row-flash {
+    0% {
+        background: #fff7cc;
+        box-shadow: inset 3px 0 0 #f0b429;
+    }
+    60% {
+        background: #fffdf0;
+        box-shadow: inset 3px 0 0 #f0b429;
+    }
+    100% {
+        background: transparent;
+        box-shadow: none;
+    }
+}

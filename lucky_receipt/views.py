@@ -107,12 +107,22 @@ class ReceiptCreateView(LoginRequiredMixin, View):
 
 
 class ReceiptListAPIView(LoginRequiredMixin, View):
+
     def get(self, request):
         qs = (
             Receipt.objects
             .filter(user=request.user)
             .order_by("-purchased_at", "-id")
         )
+
+        ids_raw = (request.GET.get("ids") or "").strip()
+        if ids_raw:
+            try:
+                ids = [int(x) for x in ids_raw.split(",") if x.strip()]
+            except ValueError:
+                ids = []
+            qs = qs.filter(id__in=ids) if ids else qs.none()
+
         results = [
             {
                 "id": r.id,
@@ -128,4 +138,6 @@ class ReceiptListAPIView(LoginRequiredMixin, View):
             }
             for r in qs
         ]
-        return JsonResponse({"results": results})
+        response = JsonResponse({"results": results})
+        response["Cache-Control"] = "no-store"
+        return response
