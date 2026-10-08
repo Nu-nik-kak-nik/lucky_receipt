@@ -12,7 +12,7 @@ from .forms import ReceiptForm
 from .models import Receipt
 
 
-def _form_errors_to_json(form) -> dict:
+def _form_errors_to_json(form) -> dict[str, list[str]]:
     out: dict[str, list[str]] = {}
     for field, errors in form.errors.get_json_data().items():
         out[field] = [e["message"] for e in errors]
