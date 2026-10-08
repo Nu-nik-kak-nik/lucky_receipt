@@ -42,6 +42,13 @@
         const errors = {};
         const values = {};
         const photoInput = form.elements["photo"];
+        const photoNameEl = form.querySelector("[data-file-name]");
+        if (photoInput && photoNameEl) {
+            photoInput.addEventListener("change", () => {
+                const f = photoInput.files && photoInput.files[0];
+                photoNameEl.textContent = f ? f.name : "Файл не выбран";
+            });
+        }
         if (photoInput && photoInput.files && photoInput.files.length > 0) {
             const f = photoInput.files[0];
             const maxBytes = 5 * 1024 * 1024;
@@ -171,6 +178,30 @@
         return { fn, fd, fp, purchased_at: purchasedAt, amount };
     }
 
+    function showSuccessCard(data) {
+        const card = form.closest(".card");
+        const redirectUrl = (data && data.redirect_url) || "/receipts/";
+
+        if (!card) {
+            // fallback — если форма вне карточки
+            window.location.href = redirectUrl;
+            return;
+        }
+
+        card.innerHTML = `
+            <div class="success-state">
+                <div class="success-state__icon" aria-hidden="true">✓</div>
+                <h2 class="success-state__title">Чек зарегистрирован</h2>
+                <p class="success-state__text">
+                    Ваш чек отправлен на проверку. Обычно это занимает до&nbsp;24&nbsp;часов.
+                    Результат появится в личном кабинете.
+                </p>
+                <a href="${redirectUrl}" class="btn btn--primary">Перейти к моим чекам</a>
+            </div>
+        `;
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
     function fillFormFromQR() {
         const qrInput = form.elements["qr_string"];
         if (!qrInput) return false;
@@ -239,13 +270,7 @@
 
             if (response.ok && data.ok) {
                 clearErrors();
-                resultBox.hidden = false;
-                resultBox.classList.add("form__result--success");
-                resultBox.textContent =
-                    "Чек успешно зарегистрирован и отправлен на проверку. Сейчас перенаправим в личный кабинет…";
-                setTimeout(() => {
-                    window.location.href = data.redirect_url || "/receipts/";
-                }, 1200);
+                showSuccessCard(data);
                 return;
             }
 

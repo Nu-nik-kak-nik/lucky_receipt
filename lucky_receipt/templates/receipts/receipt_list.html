@@ -76,9 +76,19 @@
                 {% endif %}
             </nav>
         {% endif %}
-    {% else %}
-        <p class="empty">Пока нет ни одного чека. <a href="{% url 'receipts:create' %}">Зарегистрируйте первый</a>.</p>
-    {% endif %}
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-state__icon" aria-hidden="true">📄</div>
+                <h2 class="empty-state__title">Здесь появится история ваших чеков</h2>
+                <p class="empty-state__text">
+                    Зарегистрируйте первый чек, чтобы участвовать в акции «Чек на удачу».
+                    Проверка обычно занимает до&nbsp;24&nbsp;часов.
+                </p>
+                <a href="{% url 'receipts:create' %}" class="btn btn--primary">
+                    Зарегистрировать чек
+                </a>
+            </div>
+        {% endif %}
 </section>
 {% endblock %}
 {% block scripts %}

@@ -71,7 +71,13 @@
             <label class="form__label" for="{{ form.photo.id_for_label }}">
                 {{ form.photo.label }}
             </label>
-            {{ form.photo }}
+            <div class="file-field">
+                {{ form.photo }}
+                <label for="{{ form.photo.id_for_label }}" class="file-field__button">
+                    Выбрать файл
+                </label>
+                <span class="file-field__name" data-file-name>Файл не выбран</span>
+            </div>
             <small class="form__hint">{{ form.photo.help_text }}</small>
             <div class="form__error" data-error-for="photo"></div>
         </div>
