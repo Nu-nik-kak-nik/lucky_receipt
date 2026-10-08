@@ -46,7 +46,7 @@ sudo docker compose exec web python manage.py createsuperuser
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements-dev.txt
+pip install -r requirements.txt
 
 sudo docker compose up -d db
 
