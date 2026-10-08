@@ -7,6 +7,15 @@
     const submitBtn = document.getElementById("receipt-submit");
     const resultBox = form.querySelector("[data-result]");
 
+    const photoInput = form.elements["photo"];
+    const photoNameEl = form.querySelector("[data-file-name]");
+    if (photoInput && photoNameEl) {
+        photoInput.addEventListener("change", () => {
+            const f = photoInput.files && photoInput.files[0];
+            photoNameEl.textContent = f ? f.name : "Файл не выбран";
+        });
+    }
+
     const fieldConfig = {
         fn: { required: true, digits: true, label: "ФН" },
         fd: { required: true, digits: true, label: "ФД" },
@@ -41,18 +50,10 @@
         const qrFilled = qrInput && qrInput.value.trim().length > 0;
         const errors = {};
         const values = {};
-        const photoInput = form.elements["photo"];
-        const photoNameEl = form.querySelector("[data-file-name]");
-        if (photoInput && photoNameEl) {
-            photoInput.addEventListener("change", () => {
-                const f = photoInput.files && photoInput.files[0];
-                photoNameEl.textContent = f ? f.name : "Файл не выбран";
-            });
-        }
         if (photoInput && photoInput.files && photoInput.files.length > 0) {
             const f = photoInput.files[0];
             const maxBytes = 5 * 1024 * 1024;
-            const minBytes = 10 * 1024;
+            const minBytes = 1 * 1024;
             const allowed = ["image/jpeg", "image/png", "image/webp"];
 
             if (f.size > maxBytes) {
