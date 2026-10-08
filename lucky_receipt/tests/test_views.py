@@ -96,3 +96,42 @@ class ReceiptViewTests(TestCase):
         resp = self.client.get(reverse("receipts:api_list"))
         assert isinstance(resp, HttpResponseRedirect)
         assert resp.status_code == 302
+
+    def test_api_filter_by_ids(self):
+        r1 = Receipt.objects.create(user=self.u1, fn="1", fd="1", fp="1",
+                                    purchased_at=_dt(), amount=Decimal("1000"))
+        r2 = Receipt.objects.create(user=self.u1, fn="2", fd="2", fp="2",
+                                    purchased_at=_dt(), amount=Decimal("1000"))
+        Receipt.objects.create(user=self.u1, fn="3", fd="3", fp="3",
+                               purchased_at=_dt(), amount=Decimal("1000"))
+
+        resp = self.client.get(
+            reverse("receipts:api_list") + f"?ids={r1.id},{r2.id}"
+        )
+        assert isinstance(resp, JsonResponse)
+        ids = {r["id"] for r in resp.json()["results"]}
+        assert ids == {r1.id, r2.id}
+
+    def test_api_filter_by_ids_does_not_leak_other_users(self):
+        other = Receipt.objects.create(user=self.u2, fn="9", fd="9", fp="9",
+                                       purchased_at=_dt(), amount=Decimal("1000"))
+        resp = self.client.get(
+            reverse("receipts:api_list") + f"?ids={other.id}"
+        )
+        assert isinstance(resp, JsonResponse)
+        assert resp.json()["results"] == []
+
+    def test_api_bad_ids_returns_empty(self):
+        Receipt.objects.create(user=self.u1, fn="1", fd="1", fp="1",
+                               purchased_at=_dt(), amount=Decimal("1000"))
+        resp = self.client.get(reverse("receipts:api_list") + "?ids=abc,xyz")
+        assert isinstance(resp, JsonResponse)
+        assert resp.json()["results"] == []
+
+    def test_api_no_ids_returns_all_own(self):
+        Receipt.objects.create(user=self.u1, fn="1", fd="1", fp="1",
+                               purchased_at=_dt(), amount=Decimal("1000"))
+        Receipt.objects.create(user=self.u2, fn="2", fd="2", fp="2",
+                               purchased_at=_dt(), amount=Decimal("1000"))
+        resp = self.client.get(reverse("receipts:api_list"))
+        assert len(resp.json()["results"]) == 1
