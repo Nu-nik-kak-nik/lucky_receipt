@@ -36,21 +36,37 @@ class AdminTests(TestCase):
         base.update(overrides)
         return Receipt.objects.create(**base)
 
-    def test_accepted_can_have_comment(self):
-        r = self._mk()
-        resp = self.client.post(
-            reverse("admin:lucky_receipt_receipt_change", args=[r.id]),
-            {
-                "user": self.user.id,
-                "fn": r.fn, "fd": r.fd, "fp": r.fp,
+    def _admin_post_data(self, r, **overrides):
+            data = {
+                # management form для inline
+                "photos-TOTAL_FORMS": "0",
+                "photos-INITIAL_FORMS": "0",
+                "photos-MIN_NUM_FORMS": "0",
+                "photos-MAX_NUM_FORMS": "1000",
+                # поля формы
+                "fn": r.fn,
+                "fd": r.fd,
+                "fp": r.fp,
                 "purchased_at_0": r.purchased_at.strftime("%Y-%m-%d"),
                 "purchased_at_1": r.purchased_at.strftime("%H:%M:%S"),
-                "amount": "1500",
-                "status": Receipt.Status.ACCEPTED,
-                "moderator_comment": "Ваш приз ждёт вас — сходите на почту.",
-            },
+                "amount": str(r.amount),
+                "status": r.status,
+                "moderator_comment": r.moderator_comment,
+            }
+            data.update(overrides)
+            return data
+
+    def test_accepted_can_have_comment(self):
+        r = self._mk()
+        data = self._admin_post_data(
+            r,
+            status=Receipt.Status.ACCEPTED,
+            moderator_comment="Ваш приз ждёт вас — сходите на почту.",
         )
-        # При принятии с комментарием — всё ок, редирект на список
+        resp = self.client.post(
+            reverse("admin:lucky_receipt_receipt_change", args=[r.id]),
+            data,
+        )
         assert resp.status_code == 302
         r.refresh_from_db()
         assert r.status == Receipt.Status.ACCEPTED
@@ -58,17 +74,14 @@ class AdminTests(TestCase):
 
     def test_rejected_requires_comment(self):
         r = self._mk()
+        data = self._admin_post_data(
+            r,
+            status=Receipt.Status.REJECTED,
+            moderator_comment="",
+        )
         resp = self.client.post(
             reverse("admin:lucky_receipt_receipt_change", args=[r.id]),
-            {
-                "user": self.user.id,
-                "fn": r.fn, "fd": r.fd, "fp": r.fp,
-                "purchased_at_0": r.purchased_at.strftime("%Y-%m-%d"),
-                "purchased_at_1": r.purchased_at.strftime("%H:%M:%S"),
-                "amount": "1500",
-                "status": Receipt.Status.REJECTED,
-                "moderator_comment": "",
-            },
+            data,
         )
         assert resp.status_code == 200
         r.refresh_from_db()
