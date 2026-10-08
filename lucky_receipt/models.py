@@ -36,7 +36,7 @@ class Receipt(models.Model):
         choices=Status.choices,
         default=Status.PENDING,
     )
-    rejection_reason = models.TextField("Причина отказа", blank=True)
+    moderator_comment = models.TextField("Информация", blank=True)
     created_at = models.DateTimeField("Дата регистрации", auto_now_add=True)
 
     class Meta:

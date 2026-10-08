@@ -18,24 +18,22 @@ class ReceiptAdminForm(forms.ModelForm):
     def clean(self):
         data = super().clean()
         status = data.get("status")
-        reason = (data.get("rejection_reason") or "").strip()
-
-        if status == Receipt.Status.REJECTED and not reason:
-            self.add_error("rejection_reason", "Причина отказа обязательна")
-
-        if status != Receipt.Status.REJECTED:
-            data["rejection_reason"] = ""
+        comment = (data.get("moderator_comment") or "").strip()
+        if status == Receipt.Status.REJECTED and not comment:
+            self.add_error(
+                "moderator_comment",
+                "При отклонении обязательно укажите причину",
+            )
 
         return data
 
 
-class RejectWithReasonForm(forms.Form):
-    reason = forms.CharField(
-        label="Причина отказа",
+class RejectWithCommentForm(forms.Form):
+    comment = forms.CharField(
+        label="Информация (причина отказа)",
         widget=forms.Textarea(attrs={"rows": 4, "cols": 60}),
         required=True,
     )
-
 
 
 class ReceiptPhotoInline(admin.TabularInline):
@@ -57,7 +55,6 @@ class ReceiptPhotoInline(admin.TabularInline):
         )
 
 
-
 @admin.register(Receipt)
 class ReceiptAdmin(admin.ModelAdmin):
     form = ReceiptAdminForm
@@ -77,35 +74,48 @@ class ReceiptAdmin(admin.ModelAdmin):
             "fields": ("user", "fn", "fd", "fp", "purchased_at", "amount", "created_at"),
         }),
         ("Модерация", {
-            "fields": ("status", "rejection_reason"),
+            "fields": ("status", "moderator_comment"),
+            "description": (
+                "Комментарий обязателен при отклонении. "
+                "При принятии можно оставить пояснение для пользователя."
+            ),
         }),
     )
 
     inlines = [ReceiptPhotoInline]
-    actions = ["mark_accepted", "mark_pending", "reject_with_reason", "export_accepted_csv"]
 
+    actions = [
+        "mark_accepted",
+        "mark_pending",
+        "reject_with_comment",
+        "export_accepted_csv",
+    ]
 
     @admin.action(description="Принять выбранные чеки")
     def mark_accepted(self, request, queryset):
-        updated = queryset.update(status=Receipt.Status.ACCEPTED, rejection_reason="")
+        updated = queryset.update(status=Receipt.Status.ACCEPTED)
         self.message_user(request, f"Принято чеков: {updated}", messages.SUCCESS)
 
     @admin.action(description="Вернуть на проверку")
     def mark_pending(self, request, queryset):
-        updated = queryset.update(status=Receipt.Status.PENDING, rejection_reason="")
+        updated = queryset.update(status=Receipt.Status.PENDING)
         self.message_user(request, f"Возвращено на проверку: {updated}", messages.SUCCESS)
 
-    @admin.action(description="Отклонить с причиной…")
-    def reject_with_reason(self, request, queryset):
+    @admin.action(description="Отклонить с указанием причины…")
+    def reject_with_comment(self, request, queryset):
         ids = ",".join(str(pk) for pk in queryset.values_list("id", flat=True))
-        url = reverse("admin:lucky_receipt_receipt_reject_with_reason")
+        url = reverse("admin:lucky_receipt_receipt_reject_with_comment")
         return HttpResponseRedirect(f"{url}?ids={ids}")
 
     @admin.action(description="Экспортировать принятые чеки в CSV")
     def export_accepted_csv(self, request, queryset):
         accepted = queryset.filter(status=Receipt.Status.ACCEPTED).select_related("user")
         if not accepted.exists():
-            self.message_user(request, "Среди выбранных нет принятых чеков", messages.WARNING)
+            self.message_user(
+                request,
+                "Среди выбранных нет принятых чеков",
+                messages.WARNING,
+            )
             return None
 
         response = HttpResponse(content_type="text/csv; charset=utf-8")
@@ -115,7 +125,7 @@ class ReceiptAdmin(admin.ModelAdmin):
         writer = csv.writer(response, delimiter=";")
         writer.writerow([
             "ID", "Пользователь", "Email", "ФН", "ФД", "ФП",
-            "Дата покупки", "Сумма", "Дата регистрации",
+            "Дата покупки", "Сумма", "Дата регистрации", "Информация",
         ])
         for r in accepted:
             writer.writerow([
@@ -124,6 +134,7 @@ class ReceiptAdmin(admin.ModelAdmin):
                 r.purchased_at.strftime("%d.%m.%Y %H:%M"),
                 f"{r.amount:.2f}",
                 r.created_at.strftime("%d.%m.%Y %H:%M"),
+                r.moderator_comment.replace("\n", " "),
             ])
         return response
 
@@ -131,39 +142,39 @@ class ReceiptAdmin(admin.ModelAdmin):
         urls = super().get_urls()
         custom = [
             path(
-                "reject-with-reason/",
-                self.admin_site.admin_view(self.reject_with_reason_view),
-                name="lucky_receipt_receipt_reject_with_reason",
+                "reject-with-comment/",
+                self.admin_site.admin_view(self.reject_with_comment_view),
+                name="lucky_receipt_receipt_reject_with_comment",
             ),
         ]
         return custom + urls
 
-    def reject_with_reason_view(self, request):
+    def reject_with_comment_view(self, request):
         ids_param = request.GET.get("ids") or request.POST.get("ids") or ""
         try:
             ids = [int(x) for x in ids_param.split(",") if x.strip()]
         except ValueError:
             ids = []
 
-        queryset = Receipt.objects.filter(pk__in=ids)
+        queryset = Receipt.objects.filter(pk__in=ids).select_related("user")
         if not queryset.exists():
             self.message_user(request, "Чеки не найдены", messages.ERROR)
             return HttpResponseRedirect(reverse("admin:lucky_receipt_receipt_changelist"))
 
         if request.method == "POST":
-            form = RejectWithReasonForm(request.POST)
+            form = RejectWithCommentForm(request.POST)
             if form.is_valid():
-                reason = form.cleaned_data["reason"].strip()
+                comment = form.cleaned_data["comment"].strip()
                 updated = queryset.update(
                     status=Receipt.Status.REJECTED,
-                    rejection_reason=reason,
+                    moderator_comment=comment,
                 )
                 self.message_user(request, f"Отклонено чеков: {updated}", messages.SUCCESS)
                 return HttpResponseRedirect(
                     reverse("admin:lucky_receipt_receipt_changelist")
                 )
         else:
-            form = RejectWithReasonForm()
+            form = RejectWithCommentForm()
 
         context = {
             **self.admin_site.each_context(request),
@@ -173,4 +184,4 @@ class ReceiptAdmin(admin.ModelAdmin):
             "receipts": queryset,
             "opts": self.model._meta,
         }
-        return render(request, "admin/lucky_receipt/reject_with_reason.html", context)
+        return render(request, "admin/lucky_receipt/reject_with_comment.html", context)

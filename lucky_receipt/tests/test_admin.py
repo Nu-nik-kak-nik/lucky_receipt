@@ -36,7 +36,27 @@ class AdminTests(TestCase):
         base.update(overrides)
         return Receipt.objects.create(**base)
 
-    def test_rejected_requires_reason(self):
+    def test_accepted_can_have_comment(self):
+        r = self._mk()
+        resp = self.client.post(
+            reverse("admin:lucky_receipt_receipt_change", args=[r.id]),
+            {
+                "user": self.user.id,
+                "fn": r.fn, "fd": r.fd, "fp": r.fp,
+                "purchased_at_0": r.purchased_at.strftime("%Y-%m-%d"),
+                "purchased_at_1": r.purchased_at.strftime("%H:%M:%S"),
+                "amount": "1500",
+                "status": Receipt.Status.ACCEPTED,
+                "moderator_comment": "Ваш приз ждёт вас — сходите на почту.",
+            },
+        )
+        # При принятии с комментарием — всё ок, редирект на список
+        assert resp.status_code == 302
+        r.refresh_from_db()
+        assert r.status == Receipt.Status.ACCEPTED
+        assert "приз" in r.moderator_comment.lower()
+
+    def test_rejected_requires_comment(self):
         r = self._mk()
         resp = self.client.post(
             reverse("admin:lucky_receipt_receipt_change", args=[r.id]),
@@ -47,7 +67,7 @@ class AdminTests(TestCase):
                 "purchased_at_1": r.purchased_at.strftime("%H:%M:%S"),
                 "amount": "1500",
                 "status": Receipt.Status.REJECTED,
-                "rejection_reason": "",
+                "moderator_comment": "",
             },
         )
         assert resp.status_code == 200

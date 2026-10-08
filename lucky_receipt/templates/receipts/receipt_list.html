@@ -24,7 +24,7 @@
                         <th>Сумма</th>
                         <th>Статус</th>
                         <th>Фото</th>
-                        <th>Причина отказа</th>
+                        <th>Информация</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -48,7 +48,9 @@
                                     <span class="muted">—</span>
                                 {% endif %}
                             </td>
-                            <td data-label="Причина отказа">{{ r.rejection_reason|default:"—" }}</td>
+                            <td data-label="Информация" data-cell="comment">
+                                {{ r.moderator_comment|default:"—" }}
+                            </td>
                         </tr>
                     {% endfor %}
                 </tbody>

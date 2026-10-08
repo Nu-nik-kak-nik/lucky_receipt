@@ -133,7 +133,7 @@ class ReceiptListAPIView(LoginRequiredMixin, View):
                 "amount": str(r.amount),
                 "status": r.status,
                 "status_display": r.get_status_display(),
-                "rejection_reason": r.rejection_reason,
+                "moderator_comment": r.moderator_comment,
                 "created_at": r.created_at.isoformat(),
             }
             for r in qs

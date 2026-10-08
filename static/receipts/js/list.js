@@ -34,10 +34,10 @@
         );
     }
 
-    function findReasonCell(row) {
+    function findCommentCell(row) {
         return (
-            row.querySelector('[data-cell="reason"]') ||
-            row.querySelector('td[data-label="Причина отказа"]')
+            row.querySelector('[data-cell="comment"]') ||
+            row.querySelector('td[data-label="Информация"]')
         );
     }
 
@@ -57,9 +57,9 @@
             badge.className = "badge badge--" + fresh.status;
         }
 
-        const reasonCell = findReasonCell(row);
-        if (reasonCell) {
-            reasonCell.textContent = fresh.rejection_reason || "—";
+        const commentCell = findCommentCell(row);
+        if (commentCell) {
+            commentCell.textContent = fresh.moderator_comment || "—";
         }
 
         row.dataset.status = fresh.status;
