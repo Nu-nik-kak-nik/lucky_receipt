@@ -36,7 +36,9 @@
         if (input) input.classList.add("is-invalid");
     }
 
-    function validateClient() {
+  function validateClient() {
+        const qrInput = form.elements["qr_string"];
+        const qrFilled = qrInput && qrInput.value.trim().length > 0;
         const errors = {};
         const values = {};
 
@@ -44,6 +46,14 @@
             const input = form.elements[name];
             if (!input) continue;
             values[name] = (input.value || "").trim();
+        }
+
+        if (qrFilled) {
+            const requiredFields = ["fn", "fd", "fp", "purchased_at", "amount"];
+            const allEmpty = requiredFields.every((n) => !values[n]);
+            if (allEmpty) {
+                return {};
+            }
         }
 
         // fn / fd / fp
@@ -112,8 +122,81 @@
         return hasError;
     }
 
+    function parseQRString(raw) {
+        if (!raw || typeof raw !== "string") return null;
+        const trimmed = raw.trim();
+        if (!trimmed) return null;
+
+        const params = {};
+        for (const pair of trimmed.split("&")) {
+            const eq = pair.indexOf("=");
+            if (eq < 0) continue;
+            const key = pair.slice(0, eq).trim();
+            const value = pair.slice(eq + 1).trim();
+            if (key) params[key] = value;
+        }
+
+        const fn = params.fn;
+        const fd = params.i;
+        const fp = params.fp;
+        const t = params.t;
+        const s = params.s;
+        if (!fn || !fd || !fp || !t || !s) return null;
+        if (!/^\d+$/.test(fn) || !/^\d+$/.test(fd) || !/^\d+$/.test(fp)) return null;
+
+        // t = 20261008T1200 | 20261008T120000 | 2026-10-08T12:00 | 2026-10-08T12:00:00
+        const m = t.match(/^(\d{4})-?(\d{2})-?(\d{2})T(\d{2}):?(\d{2})(?::?(\d{2}))?$/);
+        if (!m) return null;
+        const [, y, mo, d, h, mi] = m;
+        const purchasedAt = `${y}-${mo}-${d}T${h}:${mi}`;
+
+        const amount = s.replace(",", ".");
+        if (!/^\d+(\.\d+)?$/.test(amount)) return null;
+
+        return { fn, fd, fp, purchased_at: purchasedAt, amount };
+    }
+
+    function fillFormFromQR() {
+        const qrInput = form.elements["qr_string"];
+        if (!qrInput) return false;
+
+        const parsed = parseQRString(qrInput.value);
+        if (!parsed) return false;
+
+        const targets = {
+            fn: parsed.fn,
+            fd: parsed.fd,
+            fp: parsed.fp,
+            purchased_at: parsed.purchased_at,
+            amount: parsed.amount,
+        };
+
+        let filled = false;
+        for (const [name, value] of Object.entries(targets)) {
+            const input = form.elements[name];
+            if (!input) continue;
+            if (!input.value.trim()) {
+                input.value = value;
+                filled = true;
+            }
+        }
+        return filled;
+    }
+
+    const qrInput = form.elements["qr_string"];
+    if (qrInput) {
+        qrInput.addEventListener("blur", () => {
+            fillFormFromQR();
+        });
+        qrInput.addEventListener("input", () => {
+        });
+    }
+
     form.addEventListener("submit", async (event) => {
-        event.preventDefault();
+      event.preventDefault();
+
+      fillFormFromQR();
+      clearErrors();
 
         const clientErrors = validateClient();
         if (Object.keys(clientErrors).length > 0) {
