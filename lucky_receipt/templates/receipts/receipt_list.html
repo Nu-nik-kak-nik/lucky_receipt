@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Мои чеки — Чек на удачу{% endblock %}
+
+{% block content %}
+<section class="card">
+    <header class="card__header card__header--row">
+        <div>
+            <h1 class="card__title">Мои чеки</h1>
+            <p class="card__subtitle">
+                Акция: {{ PROMO_START_DATE|date:"d.m.Y" }} — {{ PROMO_END_DATE|date:"d.m.Y" }}
+            </p>
+        </div>
+        <a href="{% url 'receipts:create' %}" class="btn btn--primary">Зарегистрировать чек</a>
+    </header>
+
+    {% if receipts %}
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Дата покупки</th>
+                        <th>Сумма</th>
+                        <th>Статус</th>
+                        <th>Причина отказа</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in receipts %}
+                        <tr>
+                            <td data-label="Дата покупки">{{ r.purchased_at|date:"d.m.Y H:i" }}</td>
+                            <td data-label="Сумма">{{ r.amount }} ₽</td>
+                            <td data-label="Статус">
+                                <span class="badge badge--{{ r.status }}">{{ r.get_status_display }}</span>
+                            </td>
+                            <td data-label="Причина отказа">{{ r.rejection_reason|default:"—" }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if is_paginated %}
+            <nav class="pagination">
+                {% if page_obj.has_previous %}
+                    <a class="pagination__link" href="?page={{ page_obj.previous_page_number }}">← Назад</a>
+                {% else %}
+                    <span class="pagination__link pagination__link--disabled">← Назад</span>
+                {% endif %}
+
+                <span class="pagination__info">
+                    Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}
+                </span>
+
+                {% if page_obj.has_next %}
+                    <a class="pagination__link" href="?page={{ page_obj.next_page_number }}">Вперёд →</a>
+                {% else %}
+                    <span class="pagination__link pagination__link--disabled">Вперёд →</span>
+                {% endif %}
+            </nav>
+        {% endif %}
+    {% else %}
+        <p class="empty">Пока нет ни одного чека. <a href="{% url 'receipts:create' %}">Зарегистрируйте первый</a>.</p>
+    {% endif %}
+</section>
+{% endblock %}

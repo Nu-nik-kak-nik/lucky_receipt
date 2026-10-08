@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Регистрация чека — Чек на удачу{% endblock %}
+
+{% block content %}
+<section class="card">
+    <header class="card__header">
+        <h1 class="card__title">Регистрация чека</h1>
+        <p class="card__subtitle">
+            Акция действует с {{ PROMO_START_DATE|date:"d.m.Y" }}
+            по {{ PROMO_END_DATE|date:"d.m.Y" }}.
+            Минимальная сумма чека — {{ PROMO_MIN_AMOUNT }} ₽.
+        </p>
+    </header>
+
+    <form id="receipt-form"
+          class="form"
+          method="post"
+          action="{% url 'receipts:create' %}"
+          novalidate>
+        {% csrf_token %}
+
+        <div class="form__row">
+            <label class="form__label" for="{{ form.fn.id_for_label }}">ФН</label>
+            {{ form.fn }}
+            <small class="form__hint">Номер фискального накопителя</small>
+            <div class="form__error" data-error-for="fn"></div>
+        </div>
+
+        <div class="form__row">
+            <label class="form__label" for="{{ form.fd.id_for_label }}">ФД</label>
+            {{ form.fd }}
+            <small class="form__hint">Номер фискального документа</small>
+            <div class="form__error" data-error-for="fd"></div>
+        </div>
+
+        <div class="form__row">
+            <label class="form__label" for="{{ form.fp.id_for_label }}">ФП</label>
+            {{ form.fp }}
+            <small class="form__hint">Фискальный признак документа</small>
+            <div class="form__error" data-error-for="fp"></div>
+        </div>
+
+        <div class="form__row">
+            <label class="form__label" for="{{ form.purchased_at.id_for_label }}">
+                Дата и время покупки
+            </label>
+            {{ form.purchased_at }}
+            <div class="form__error" data-error-for="purchased_at"></div>
+        </div>
+
+        <div class="form__row">
+            <label class="form__label" for="{{ form.amount.id_for_label }}">Сумма, ₽</label>
+            {{ form.amount }}
+            <div class="form__error" data-error-for="amount"></div>
+        </div>
+
+        <div class="form__error form__error--general" data-error-for="__all__"></div>
+
+        <div class="form__actions">
+            <button type="submit" class="btn btn--primary" id="receipt-submit">
+                Отправить на проверку
+            </button>
+            <a href="{% url 'receipts:list' %}" class="btn btn--ghost">Мои чеки</a>
+        </div>
+
+        <div class="form__result" data-result hidden></div>
+    </form>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'receipts/js/form.js' %}" defer></script>
+{% endblock %}

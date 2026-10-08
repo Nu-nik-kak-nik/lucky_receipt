@@ -1,0 +1,51 @@
+{% load static %}
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Чек на удачу{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'receipts/css/style.css' %}">
+    {% block head %}{% endblock %}
+</head>
+<body>
+<header class="topbar">
+    <div class="container topbar__inner">
+        <a href="{% url 'receipts:index' %}" class="logo">Чек на удачу</a>
+        <nav class="nav">
+            {% if user.is_authenticated %}
+                <a class="nav__link" href="{% url 'receipts:list' %}">Мои чеки</a>
+                <a class="nav__link" href="{% url 'receipts:create' %}">Зарегистрировать чек</a>
+                {% if user.is_staff %}
+                    <a class="nav__link" href="{% url 'admin:index' %}">Админка</a>
+                {% endif %}
+                <form action="{% url 'logout' %}" method="post" class="logout-form">
+                    {% csrf_token %}
+                    <button type="submit" class="link-button">Выйти ({{ user.username }})</button>
+                </form>
+            {% else %}
+                <a class="nav__link" href="{% url 'login' %}">Войти</a>
+                <a class="nav__link" href="{% url 'register' %}">Регистрация</a>
+            {% endif %}
+        </nav>
+    </div>
+</header>
+
+<main class="container main">
+    {% if messages %}
+        <ul class="messages">
+            {% for m in messages %}
+                <li class="message message--{{ m.tags }}">{{ m }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+</main>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>
