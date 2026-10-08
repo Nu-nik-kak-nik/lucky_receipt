@@ -13,6 +13,7 @@ class Receipt(models.Model):
         PENDING = "pending", "На проверке"
         ACCEPTED = "accepted", "Принят"
         REJECTED = "rejected", "Отклонён"
+        WON = "won", "Вы выиграли"
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,

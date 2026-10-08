@@ -86,6 +86,7 @@ class ReceiptAdmin(admin.ModelAdmin):
 
     actions = [
         "mark_accepted",
+        "mark_won",
         "mark_pending",
         "reject_with_comment",
         "export_accepted_csv",
@@ -106,6 +107,11 @@ class ReceiptAdmin(admin.ModelAdmin):
         ids = ",".join(str(pk) for pk in queryset.values_list("id", flat=True))
         url = reverse("admin:lucky_receipt_receipt_reject_with_comment")
         return HttpResponseRedirect(f"{url}?ids={ids}")
+
+    @admin.action(description="Отметить как победителя")
+    def mark_won(self, request, queryset):
+        updated = queryset.update(status=Receipt.Status.WON)
+        self.message_user(request, f"Отмечено победителями: {updated}", messages.SUCCESS)
 
     @admin.action(description="Экспортировать принятые чеки в CSV")
     def export_accepted_csv(self, request, queryset):
