@@ -1,4 +1,5 @@
 import os
+import sys as _sys
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
@@ -100,6 +101,10 @@ DATABASES = {
         "PORT": env("POSTGRES_PORT", "5432"),
     }
 }
+if "test" in _sys.argv and not env("POSTGRES_HOST", ""):
+    DATABASES = {
+        "default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}
+    }
 
 
 # Password validation
@@ -156,5 +161,38 @@ if PROMO_END_DATE < PROMO_START_DATE:
 MAILERS = {
     'default': {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
+    },
+}
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{asctime} {levelname} {name} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
+    },
+    "loggers": {
+        "django.request": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+        "lucky_receipt": {
+            "handlers": ["console"],
+            "level": "DEBUG" if DEBUG else "INFO",
+            "propagate": False,
+        },
     },
 }
